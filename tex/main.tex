@@ -1,0 +1,628 @@
+ % latexdiff --math-markup=whole main-old.tex main.tex > diff.tex
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+%\usepackage[english]{babel}
+\usepackage[hidelinks]{hyperref}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{mathtools} % \begin{bmatrix*}[l]
+\usepackage{microtype} % subliminal refinements 
+\usepackage[round-pad=false]{siunitx}
+\usepackage{courier} % \texttt{abc}
+
+\usepackage[style=numeric-verb, maxbibnames=20, sorting=none, eprint=false, url=false]{biblatex}
+\setlength\bibitemsep{0.95\itemsep}
+\addbibresource{bib/bibliography.bib}
+\addbibresource{bib/ISASPublikationen.bib}
+\addbibresource{bib/ISASPublikationen_laufend.bib}
+\addbibresource{bib/ISASPreprints.bib}
+
+% \clubpenalty=100000   % no isolated last line on page 
+% \widowpenalty=100000  % no isolated first line on page 
+% \brokenpenalty=100000 % no hyphenation across page breaks  
+% \finalhyphendemerits=100000 % no hyphenation at end of paragraph  
+
+%
+% User-Defined Files
+%
+\input{def/abbreviations1}
+\input{def/abbreviations2}
+\input{def/acronyms}
+
+
+\begin{document}
+
+\title{Why You Shouldn't Use TDOA for Multilateration}
+
+\author{\IEEEauthorblockN{\textbf{Daniel Frisch} and \textbf{Uwe D.~Hanebeck}}
+\IEEEauthorblockA{Intelligent Sensor-Actuator-Systems Laboratory (ISAS)\\
+ Institute for Anthropomatics and Robotics\\
+ Karlsruhe Institute of Technology (KIT), Germany\\
+ daniel.frisch@kit.edu, uwe.hanebeck@kit.edu}}
+
+\maketitle
+
+\begin{abstract}
+The maximum likelihood problem arising from multilateration or source localization via signal times of arrival (TOA) leads to a nonlinear least squares problem in target position and target transmission time (TTT). Since we are not interested in the latter, it is usually eliminated from the equation system. We eliminate the TTT in closed form, which is simpler to design and easier to implement than the often used pairwise time differences of arrival (TDOAs). We propose an unweighted nonlinear least squares formulation of the multilateration problem whose optimization with the Levenberg-Marquardt algorithm is very fast. 
+\end{abstract}
+
+\begin{IEEEkeywords}
+source localization, multilateration, maximum likelihood, time of arrival (TOA), time difference of arrival (TDOA), Weighted nonlinear least squares, Levenberg-Marquardt
+\end{IEEEkeywords}
+
+\noindent Source code is available here: \\
+\url{https://github.com/KIT-ISAS/SDF2025_MLAT-TOA}
+
+%
+% =========
+%
+\section{Introduction} 
+%
+% Application
+%
+Multilateration is a method for passive source localization based on \ac{TOA} measurements. It can be realized with a relatively cheap sensor infrastructure and can yield very high accuracy. A major application area is \ac{SSR}, i.e., the tracking of cooperative aerial targets. 
+
+%
+% Direct Solution Methods
+%
+There are convenient algebraic methods providing a closed-form solution 
+\cite{Bancroft1985_AnAlgebraicSolutionOfTheGPSEquations}, 
+\cite{Norrdine2012_AnAlgebraicSolutionToTheMultilaterationProblem}, 
+\cite{Larsson2019_OptimalTrilaterationIsAnEigenvalueProblem}. 
+All these methods, however, introduce some nonlinear transform of the measurement equation, usually to get rid of the square root from the Euclidean distance. This implies, that the solution is no longer optimal under the presence of additive Gaussian measurement noise. 
+
+%
+% TOA+TTT
+%
+The ``gold standard'' maximum likelihood estimation requires an iterative search for target position and \ac{TTT} via numerical optimization. This is proposed in 
+\cite{PerezCruz2019_ProbabilisticTimeOfArrivalLocalization}. 
+%
+% Synchronized
+%
+Some also require target and sensors being time-synchronized, i.e., the \ac{TTT} to be known, so that one needs to search for target position only 
+\cite{Xiong2024_RobustTimeOfArrivalLocalizationViaADMM}, 
+\cite{Le2016_ClosedFormAndNearClosedFormSolutionsForTOABasedJointSourceAndSensorLocalization}. 
+
+%
+% Further
+%
+The \ac{TTT} can also be eliminated by taking differences of pairs of measurements or by solving a linear least squares problem, which we focus on in this work. Differentiation from prior state of the art in these areas is given in \cref{sec:TDOA:distorted} and \cref{sec:TOA:state-of-art}, after having established the notation and problem structure. 
+
+
+%
+% =========
+%
+\section{Problem Description}
+%
+% ======
+%
+\subsection{Measurement Equation}
+A target at unknown location 
+$
+    \x\T = \begin{bmatrix}
+    x & y & z
+    \end{bmatrix}
+$
+transmits a radio signal at unknown time $t_0$. This signal is received by various sensors at known locations 
+\begin{align}
+    \s_i &= \begin{bmatrix}s_{i,x}\\ s_{i,y} \\ s_{i,z} \end{bmatrix} ,\quad \text{ for } i \in \brackets{1,2,\hdots,N} \enspace. 
+\end{align}
+Each sensor measures the \ac{TOA} $t_i$ with zero-mean additive Gaussian noise $v_i$ with stochastic properties 
+\begin{align}
+    \op{Var}\braces{v_i}&=\sigma_i^2\enspace, 
+    & \Cov{v_i,v_j}&=0 \; \text{ for } i\neq j \enspace. 
+\end{align}
+%
+% Meas Eq
+%
+Therefore, we have the measurement equation 
+\begin{align}
+    t_i &= t_0 + \frac{1}{c}\abss{\x-\s_i} + v_i \enspace, \label{eq:MeasurementEq}
+\end{align}
+where $c$ is the signal propagation speed. In vector notation, for all measurements combined, it is 
+\begin{align}
+    \t &= t_0 \cdot \vec 1 + \vec h(\x) + \v \enspace, \label{eq:MeasurementEqVec}
+\end{align}
+where 
+\begin{align}
+    \t &= \begin{bmatrix}
+        t_1 \\ t_2 \\ \vdots \\ t_N
+    \end{bmatrix} \,, & 
+    \vec h(\x) &= \frac{1}{c} \begin{bmatrix}
+        \abss{\x-\s_1} \\
+        \abss{\x-\s_2} \\
+        \vdots  \\ 
+        \abss{\x-\s_N} 
+    \end{bmatrix} \,, &
+    \v &= \begin{bmatrix}
+        v_1 \\ v_2 \\ \vdots \\ v_N
+    \end{bmatrix} \,,
+\end{align}
+with noise covariance 
+\begin{align}
+    \Cov{\v} = \mat C_v = \begin{bmatrix}
+        \sigma_1^2 & & & 0 \\
+         &  \sigma_2^2 \\ 
+         & & \ddots \\ 
+         0 & & & \sigma_N^2
+    \end{bmatrix} \enspace. \label{eq:MeasurementEq:Cov}
+\end{align}
+
+%
+% ======
+%
+\subsection{Maximum Likelihood Estimation}
+%
+% Likelihood
+%
+The likelihood is therefore
+\begin{align}
+    f(\t \mid t_0,\x) &= f_v( -t_0 \cdot \vec 1 + \t - \vec h(\x)) \enspace,
+\end{align}
+with 
+\begin{align}
+    f_v(\v) &\propto \exp\braces{-\frac{1}{2} \;  \v\T \mat C_v^{-1} \v} \enspace. 
+\end{align}
+%
+% ML
+%
+Finally, the \ac{ML} solution is 
+\begin{align}
+    (\hat t_0, \hat \x) &= \argmax_{(t_0,\x)} f(\t \mid t_0,\x) \\ 
+    &= \argmin_{(t_0,\x)} \abss{t_0 \cdot \vec 1 - \t + \vec h(\x)}_{\mat C_v^{-1}}^2 \enspace,  \label{eq:ML-Solve}
+\end{align}
+where $\abss{\x}^2_{\mat C} = \x\T \mat C \x. $
+This can, for diagonal $\mat C_v$, also be written as 
+\begin{align}
+    (\hat t_0, \hat \x) &= \argmin_{(t_0,\x)} \sum_{i=1}^N  {\brackets{\frac{1}{\sigma_i}\paren{t_0 - t_i + \frac{1}{c}\abss{\x-\s_i} }}}^2 \enspace. \label{eq:ML-min}
+\end{align}
+%
+% Solve
+%
+This nonlinear least squares problem could readily be solved with the Gauss-Newton algorithm
+\cite{Gauss1809_TheoriaMotusCorporumCoelestiumInSectionibusConicisSolemAmbientiumAuctoreCaroloFridericoGauss},
+\cite{Nocedal2006_NumericalOptimization},
+or its regularized variant, the the Levenberg-Marquardt algorithm
+\cite{Levenberg1944_AMethodForTheSolutionOfCertainNonLinearProblemsInLeastSquares},
+\cite{Marquardt1963_AnAlgorithmForLeastSquaresEstimationOfNonlinearParameters}, 
+or also Powell's hybrid ``dog-leg'' method
+\cite{Powell1970_AHybridMethodForNonlinearEquations}, 
+\cite{Byrd1988_ApproximateSolutionOfTheTrustRegionProblemByMinimizationOverTwoDimensionalSubspaces}. 
+However, it seems desirable to first get rid of the unknown \ac{TTT} $t_0$ that we are not interested in, to not burden the optimizer with unnecessary work. 
+
+%
+% =========
+%
+\section{TDOA Method} 
+What is often done is to subtract two \ac{TOA} measurement equations from each other, yielding the \ac{TDOA} measurement equation
+\begin{align}
+    t_i-t_j &= \frac{1}{c}\abss{\x-\s_i} - \frac{1}{c}\abss{\x-\s_j} + v_i - v_j \enspace,
+\end{align}
+which can also be written as 
+\begin{align}
+    \tau_{i,j} &= \eta_{i,j}(\x) + \nu_{i,j} \enspace, \\
+    \eta_{i,j}(\x) &= \frac{1}{c}\abss{\x-\s_i} - \frac{1}{c}\abss{\x-\s_j} \enspace. \label{eq:TDOA:etaij}
+\end{align}
+%
+% Noise
+%
+Two things have changed here: the \ac{TTT} $t_0$ got eliminated, as desired, and the measurement noise changed from $v_i$ to 
+\begin{align}
+    \nu_{i,j} = v_i - v_j \enspace. 
+\end{align}
+%
+% Cov
+%
+To again obtain the appropriate \ac{ML} estimator, we have to compute the noise covariance of $\nu_{i,j}$ 
+\begin{align}
+    &\Cov{\nu_{i,j}, \nu_{k,l}} 
+    = \Cov{v_i - v_j, v_k - v_l} \label{eq:TDOA:E}\\
+    &= \E{v_i v_k} - \E{v_i v_l} - \E{v_j v_k} + \E{v_j v_l} \enspace. 
+\end{align}
+
+%
+% ======
+%
+\subsection{Consecutive Topology}
+Assuming we take differences of consecutive measurements, i.e., $N-1$ measurements $\tau_{i,j}$, in particular, 
+\begin{align}
+    \vec\tau&=\begin{bmatrix}\tau_{1,2}& \tau_{2,3}& \hdots& \tau_{N-1,N}\end{bmatrix}\T \enspace. 
+\end{align}
+Then the covariance is 
+\begin{align}
+    &\mat C_\nu = \\
+    &\begin{bmatrix}
+        \sigma_1^2+\sigma_2^2 & -\sigma_2^2 & & & 0 \\ 
+        -\sigma_2^2 & \sigma_2^2+\sigma_3^2 & -\sigma_3^2  \\
+         & -\sigma_3^2 & \sigma_3^2 + \sigma_4^2 & \ddots \\
+         & & \ddots & \ddots & -\sigma_{N-1}^2 \\ 
+         0& & & -\sigma_{N-1}^2 & \sigma_{N-1}^2+\sigma_N^2
+    \end{bmatrix} \,,
+\end{align}
+because 
+\begin{align}
+    &\Cov{\nu_{i,i+1}, \nu_{i,i+1}} \\
+    &= \E{v_i v_i} - \E{v_i v_{i+1}} - \E{v_{i+1} v_i} + \E{v_{i+1} v_{i+1}} \\
+    &= \sigma_i^2 - 0 - 0 + \sigma_{i+1}^2 
+    = \sigma_i^2 + \sigma_{i+1}^2 \enspace, 
+\end{align} 
+and
+\begin{align} 
+    &\Cov{\nu_{i-1,i}, \nu_{i,i+1}} \\ 
+    &= \E{v_{i-1} v_i} - \E{v_{i-1} v_{i+1}} - \E{v_i v_i} + \E{v_i v_{i+1}} \\
+    &= 0 - 0 - \sigma_i^2 + 0 
+    = -\sigma_i^2 \enspace. 
+\end{align}
+
+%
+% ======
+%
+\subsection{Star Topology}
+Alternatively, we could use a star-like topology, where we also get $N-1$ measurements $\tau_{i,j}$ 
+\begin{align}
+    \vec\tau &= \begin{bmatrix}\tau_{1,2}& \tau_{1,3}& \hdots& \tau_{1,N}\end{bmatrix}\T \enspace. 
+\end{align}
+In that case the covariance is 
+\begin{align}
+    \mat C_\nu &= \begin{bmatrix}
+        \sigma_1^2+\sigma_2^2 & & & \sigma_1^2 \\
+         &  \sigma_1^2+\sigma_2^3 \\ 
+         & & \ddots \\ 
+         \sigma_1^2 & & & \sigma_1^2+\sigma_N^2
+    \end{bmatrix} \enspace, 
+\end{align}
+because 
+\begin{align}
+    \Cov{\nu_{1,i}, \nu_{1,j}} 
+    &= \sigma_1^2 + \E{v_i v_j} \\
+    &= \begin{cases}
+        \sigma_1^2 + \sigma_i^2 \;, & i=j \\ 
+        \sigma_1^2 \;, & i \neq j
+    \end{cases} \enspace. 
+\end{align}
+
+%
+% ======
+%
+\subsection{Combinatorial}
+One may also decide to take all combinations of two measurements. Then $\vec \tau$ has 
+\begin{align}
+    \binom{N}{2} &= \frac{N \cdot (N-1)}{2} 
+\end{align}
+elements, and $\mat C_\nu$ must be individually compiled from \cref{eq:TDOA:E} for the respective $N$ and ordering of the combinations. 
+
+
+%
+% ======
+%
+\subsection{Solver}
+To obtain the \ac{ML} solution, we have to solve a weighted nonlinear least squares problem similar to \cref{eq:ML-Solve} but adapted to the transformed measurements $\tau_{i,j}$ 
+\begin{align}
+    \hat \x &= \argmin_{\x} \abss{\vec \eta(\x)-\vec\tau}_{\mat C_\nu^{-1}}^2 \enspace, \label{eq:TDOA:solver:WNLS}
+\end{align}
+with $\vec \eta(\x)$ the vectorized version of $\eta_{i,j}(\x)$ \cref{eq:TDOA:etaij}. 
+%
+% LM
+%
+Now we have a non-diagonally weighted nonlinear least squares problem. Although the Levenberg-Marquardt algorithm can be derived for such problems
+\cite{Gavin_TheLevenbergMarquardtAlgorithmForNonlinearLeastSquaresCurveFittingProblems}, 
+\cite[p.~515]{Mensing2006_PositioningAlgorithmsForCellularNetworksUsingTDOA},
+the major implementations do not give the option to provide a weighting matrix. We can, however, rewrite the quadratic form in \cref{eq:TDOA:solver:WNLS} 
+into a sum of squares \cite[p.~6]{Fusion19_Frisch} via the Cholesky decomposition $\mat C_\nu=\mat R \mat R\T$
+\begin{align}
+    &\abss{\vec \eta(\x)-\vec\tau}_{\mat C_\nu^{-1}}^2 \\
+    &= \brackets{{\vec \eta(\x)-\vec\tau}}\T {\paren{\mat R \mat R\T}}^{-1}\brackets{{\vec \eta(\x)-\vec\tau}} \label{eq:TDOA:WLS} \\
+    &= \brackets{{\vec \eta(\x)-\vec\tau}}\T\mat R^{-\top}\mat R^{-1}\brackets{{\vec \eta(\x)-\vec\tau}} \\
+    &= \brackets{\mat R^{-1} \paren{\vec \eta(\x)-\vec\tau}}\T\brackets{\mat R^{-1} \paren{\vec \eta(\x)-\vec\tau}} \enspace. 
+\end{align}
+Thus, transforming the vector $(\vec \eta(\x)-\vec\tau)$ with $\mat R^{-1}$ renders the least squares problem unweighted. However, this matrix multiplication makes computation of the objective function noticeably slower and can be avoided by our proposed method. 
+
+%
+% ======
+%
+\subsection{Distorted Solvers}
+\label{sec:TDOA:distorted}
+It appears that some \ac{TDOA} users do not take into account the correlations between the $\nu_{i,j}$ and simply treat the \ac{TDOA} measurements as if they had uncorrelated noise, i.e., with $\mat C_\nu$ diagonal 
+\cite[Eq.~29]{Beck2008_ExactAndApproximateSolutionsOfSourceLocalizationProblems}, 
+\cite[Eq.~10-11]{Kaune2012_WideAreaMultilaterationUsingADSBTransponderSignals}, 
+\cite[Eq.~7]{Figuet2020_CombinedMultilaterationWithMachineLearningForEnhancedAircraftLocalization}, 
+\cite[Eq.~10]{Markochev2021_AircraftLocalizationUsingATCDataWithNanosecondPrecisionFromDistributedCrowdsourcedReceivers}, 
+\cite[Eq.~5-6]{Rydell2025_LocalizationUsingDVBTSignalsExperimentalInsightsAndValidation}. 
+%
+% Crosscorrelation
+%
+This may be justified in some cases, when time differences are directly measured, e.g., via cross-correlation of the two received waveforms
+\cite{Szabo2025_MultilaterationOfDemodulatedRadioSignals}, 
+\cite{Vankayalapati2014_TDOABasedDirectPositioningMaximumLikelihoodEstimatorAndTheCramerRaoBound},
+\cite{ElGemayel2013_ALowCostTDOALocalizationSystemSetupChallengesAndResults}. 
+But usually, the \ac{TOA} are determined separately in each sensor, and only subsequently the resulting timestamps being subtracted, yielding the ``\ac{TDOA}'' values, which should actually rather be called \ac{DOTA} values. 
+%
+% Correct
+%
+Some users, however, do respect the \ac{TDOA} correlations 
+\cite[Eq.~44]{Chan1994_ASimpleAndEfficientEstimatorForHyperbolicLocation}, 
+\cite[Eq.~33]{Chan2006_ExactAndApproximateMaximumLikelihoodLocalizationAlgorithms},
+\cite[p.~514]{Mensing2006_PositioningAlgorithmsForCellularNetworksUsingTDOA}, 
+\cite[Eq.~46]{Huang2001_RealTimePassiveSourceLocalizationAPracticalLinearCorrectionLeastSquaresApproach}, 
+\cite[Eq.~3]{Galati2008_MultilaterationlocalAndWideAreaAsADistributedSensorSystemLowerBoundsOfAccuracy}, 
+\cite[Eq.~8]{Mikus2025_AccuracyStudyOnJointSourceAndSensorLocalizationUsingDOAAndTDOAMeasurementsWithClockBiases}. 
+
+
+%
+% =========
+%
+\section{Proposed TOA Method} 
+We claim that using differences of \acp{TOA} unnecessarily complicates things (in particular, the covariance matrix), and instead propose a different way dealing with the ``unwanted unknown'' $t_0$, which does not lead to a non-diagonal weighting matrix. 
+
+%
+% ======
+%
+\subsection{Key Idea}
+%
+% Linearity
+%
+Note that the measurement equation \cref{eq:MeasurementEq} is affine in $t_0$. Thus, if $\x$ was given, we could solve for $t_0$ via linear least squares, i.e., in closed form. 
+%
+% 2-stage Solve
+%
+And that is exactly what we propose: let the nonlinear solver, just like for \ac{TDOA}, propose some value for $\x$ and not for $t_0$. Then for that specific $\x$, compute the optimal $t_0$ and return the resulting loss as objective function. 
+
+%
+% ======
+%
+\subsection{Computing \texorpdfstring{$t_0$}{t0}} 
+In particular, we simply solve the vectorized measurement equation \cref{eq:MeasurementEqVec} for $t_0$. First, we rearrange it from being affine in $t_0$ to being linear in $t_0$
+\begin{align}
+    \t - \vec h(\x) &= \vec 1 \cdot t_0  + \v \enspace. 
+\end{align}
+For normally distributed $\v$ we obtain the \ac{ML} estimate $\hat t_0$ via linear least squares
+\begin{align}
+    \hat t_0 &= \paren{\vec 1\T \mat C_v^{-1} \vec 1}^{-1} \cdot  \vec 1\T \mat C_v^{-1} \paren{\t - \vec h(\x)} \enspace, 
+\end{align}
+which for diagonal $\mat C_v$ as in \cref{eq:MeasurementEq:Cov}, becomes 
+\begin{align}
+    \hat t_0 &= \frac{\sum_{i=1}^N \frac{1}{\sigma_i^2} \brackets{t_i-\frac{1}{c}\abss{\x-\s_i}}}{\sum_{i=1}^N \frac{1}{\sigma_i^2}} \enspace, \label{eq:toa:t-LLS}
+\end{align}
+and for $\mat C_v= \sigma^2 \, \mat I$ 
+\begin{align}
+    \hat t_0 &= \frac{1}{N} \sum_{i=1}^N \brackets{t_i-\frac{1}{c}\abss{\x-\s_i}} \enspace. 
+\end{align}
+Thus, $\hat t_0$ is simply the weighted sample mean of $(t_i-\frac{1}{c}\abss{\x-\s_i})$. 
+Inserting this into \cref{eq:MeasurementEqVec} yields a measurement equation that depends only on $\vec x$. 
+
+
+%
+% ======
+%
+\subsection{State-of-Art} 
+\label{sec:TOA:state-of-art}
+A similar approach has already been proposed in 
+\cite[Eq.~8+10]{Chen2020_ANovelMethodForAsynchronousTimeOfArrivalBasedSourceLocalizationAlgorithmsPerformanceAndComplexity}. 
+However, they include a penalty that keeps the $t_0$-estimate of the next iteration close to the current one, which we deem unnecessary and furthermore it requires an initial guess of $t_0$ which our method does not. But most of all, they treat finding $\hat t_0$ and $\hat x_0$ as two entirely separate optimizations which are executed alternately. Thus, after each linear least squares $\t_0$ estimation, they perform a \emph{multi-iteration} nonlinear optimization solving for $\x$
+\cite[Alg.~1]{Chen2020_ANovelMethodForAsynchronousTimeOfArrivalBasedSourceLocalizationAlgorithmsPerformanceAndComplexity}. Lastly, they propose a gradient-descent optimization, while we propose, exploiting the problem structure, the Levenberg-Marquardt method for the variant described in \cref{eq:TOA:LM}, or quasi-Newton for \cref{eq:TOA:Var}. 
+
+Similarly, 
+\cite[Eq.~4]{Zou2016_AsynchronousTimeOfArrivalBasedSourceLocalizationWithSensorPositionUncertainties}, 
+\cite{Xu2011_SourceLocalizationInWirelessSensorNetworksFromSignalTimeOfArrivalMeasurements}
+use the closed-form $\t_0$-estimate \cref{eq:toa:t-LLS} but solve the entire problem via semidefinite programming, which is generally slower. 
+Also \cite[Eq.~6]{Zou2022_FixedPointIterationBasedAlgorithmForAsynchronousTOABasedSourceLocalization} uses this trick but still arrives at a non-diagonally weighted least squares problem 
+\cite[Eq.~7+A7]{Zou2022_FixedPointIterationBasedAlgorithmForAsynchronousTOABasedSourceLocalization}, 
+just like we do for the correctly-weighted \ac{TDOA} problem, with the somewhat higher computational cost \cref{eq:TDOA:WLS}, and unlike our diagonally-weighted least squares problem for \ac{TOA} \cref{eq:TOA-LM:sol}. 
+
+
+%
+% ======
+%
+\subsection{Levenberg-Marquardt}
+\label{eq:TOA:LM}
+Inserting \cref{eq:toa:t-LLS} into \cref{eq:ML-min} gives a sum-of-squares minimization problem that depends only on $\x$ and can be solved with the Levenberg-Marquardt algorithm. 
+
+%
+% ===
+%
+\paragraph*{Objective Function}
+Levenberg-Marquardt requires an objective function $\theta_{\op{LM}}$ that returns a vector of the terms to be squared and summed, which would be 
+\begin{align}
+    \vec \theta_{\op{LM}}(\x) &= \begin{bmatrix}
+        \frac{1}{\sigma_1}\paren{\hat t_0(\x) - t_1 + \frac{1}{c}\abss{\x-\s_1} } \\
+        \frac{1}{\sigma_2}\paren{\hat t_0(\x) - t_2 + \frac{1}{c}\abss{\x-\s_2} } \\
+        \vdots \\ 
+        \frac{1}{\sigma_3}\paren{\hat t_0(\x) - t_3 + \frac{1}{c}\abss{\x-\s_3} } 
+    \end{bmatrix} \enspace, \label{eq:toa:obj-LM}
+\end{align}
+with $\hat t_0(\x)$ from \cref{eq:toa:t-LLS}, where 
+\begin{align}
+    \hat \x &= \argmin_\x \brackets{\vec \theta_{\op{LM}}(\x)}\T \mat C_v^{-1} \brackets{\vec \theta_{\op{LM}}(\x)} \enspace. \label{eq:TOA-LM:sol}
+\end{align}
+
+%
+% ===
+%
+\paragraph*{Jacobian}
+Furthermore, Levenberg-Marquardt needs the Jacobian of $\vec \theta_{\op{LM}}(\x)$. 
+%
+% Definitions
+%
+First, we define the Jacobian of $\vec h(x)$, $\mat J_{\vec h}(\x) \in \NewR^{N \times 3}$
+\begin{align}
+    \mat J_{\vec h} &= \frac{1}{c} \begin{bmatrix}
+        \paren{\x-\s_1}\T/{\abss{x-\s_1}} \\ 
+        \paren{\x-\s_2}\T/{\abss{x-\s_2}} \\ 
+        \vdots \\ 
+        \paren{\x-\s_N}\T/{\abss{x-\s_N}} 
+    \end{bmatrix} 
+\end{align}
+and weight vector $\w$ containing the diagonal elements of the diagonal $\mat C_v^{-1}$
+\begin{align}
+    \w &= \begin{bmatrix}
+        \frac{1}{\sigma_1^2} & \frac{1}{\sigma_2^2} & \cdots & \frac{1}{\sigma_N^2} 
+    \end{bmatrix}\T \enspace. 
+\end{align}
+%
+% Jac
+%
+Then the derivative of $\hat t_0(\x)$ from \cref{eq:toa:t-LLS}, $\frac{\partial \hat t_0(\x)}{\partial \x\T} \in \NewR^{1 \times 3}$, is 
+\begin{align}
+    \frac{\partial \hat t_0(\x)}{\partial \x\T} &= - \frac{1}{\vec 1\T \vec w} \cdot \w\T \mat J_{\vec h}(\x) \enspace.  
+\end{align}
+The desired Jacobian of $\theta_{\op{LM}}$ from \cref{eq:toa:obj-LM}, $\mat J_{\vec \theta_{\op{LM}}}(\x) \in \NewR^{N \times 3}$, is 
+\begin{align}
+    \mat J_{\vec \theta_{\op{LM}}}(\x) &= \sqrt{\diag(\w)} \cdot \paren{ \mat J_{\vec h}(\x) - \frac{\vec 1}{\vec 1\T \vec w} \cdot \w\T \mat J_{\vec h}(\x) } \enspace.  
+\end{align}
+
+
+
+\Figure{.99\textwidth} {fig:eval} {evaluation_rmse_LM} {Evaluation of our proposed \ac{TOA} multilateration algorithm against four state-of-art methods. The correctly weighted \ac{TDOA} methods as well as the proposed \ac{TOA} method identically give the optimal results. }
+% Generating Code: ISAS/Projects/MLAT/julia/evaluation_rmse_LM.jl
+
+
+
+\begin{table}[t]
+\centering
+\begin{tabular}{l|c|c|r} 
+Method           & Weighted                  & Unweighted  \\ \hline
+TDOA-Consecutive & \SI{229}{\micro\second}   & \SI{190}{\micro\second}    \\
+TDOA-Star        & \SI{228}{\micro\second}   & \SI{198}{\micro\second}    \\ 
+TOA (proposed)   & unnecessary               & \SI{156}{\micro\second}    
+\end{tabular}
+\caption{Computation times for the setup described in \cref{sec:eval:setup}. }
+\label{table:times}
+\end{table}
+% Generating Code: ISAS/Projects/MLAT/julia/evaluation_time_LM.jl
+
+
+\begin{table}[t]
+\centering
+\begin{tabular}{l|c|c|r} 
+Method           & Weighted  & Unweighted  \\ \hline
+TDOA-Consecutive & 0.370     & 0.452    \\
+TDOA-Star        & 0.370     & 0.804    \\ 
+TOA (proposed)   & $-$      & 0.370
+\end{tabular}
+\caption{Median Euclidean deviation of the results for the setup described in \cref{sec:eval:rmse}.}
+\label{table:RMSE}
+\end{table}
+% Generating Code: ISAS/Projects/MLAT/julia/evaluation_rmse_LM.jl
+
+
+%
+% ======
+%
+\subsection{As Sample Variance Computation}
+\label{eq:TOA:Var}
+Consider again the nonlinear least squares objective function, slightly modified from \cref{eq:ML-min} 
+\begin{align}
+    \theta(\x) &= \frac{1}{\sum_{i=1}^N \frac{1}{\sigma_i^2}}  \sum_{i=1}^N  \frac{1}{\sigma_i^2} {\brackets{\frac{1}{c}\abss{\x-\s_i} - t_i - (-\hat t_0(\x)) }}^2 \label{eq:toa:obj:tx}
+\end{align}
+and compare it to our linear least squares estimate $\hat t_0$ from \cref{eq:toa:t-LLS}
+\begin{align}
+    -\hat t_0(\x) &= \frac{1}{\sum_{i=1}^N\frac{1}{\sigma_i^2}} \sum_{i=1}^N \frac{1}{\sigma_i^2} \brackets{\frac{1}{c}\abss{\x-\s_i}-t_i} \enspace. \label{eq:toa:sampvar:t}
+\end{align}
+Inserting \cref{eq:toa:sampvar:t} into \cref{eq:toa:obj:tx} shows that what we have here is precisely a sample variance computation. This has two implications. 
+%
+% Two Sums
+%
+First, we can also write it as 
+\begin{align}
+    \theta(\x) =& \frac{1}{\sum_{i=1}^N \frac{1}{\sigma_i^2}}  \sum_{i=1}^N  \frac{1}{\sigma_i^2} {\brackets{\frac{1}{c}\abss{\x-\s_i} - t_i }}^2 
+    \text{\raisebox{-.7\baselineskip}[0pt][0pt]{\rotatebox[origin=c]{180}{$\Rsh$}}}  \\
+    & \; - {\paren{ \frac{1}{\sum_{i=1}^N \frac{1}{\sigma_i^2}}  \sum_{i=1}^N  \frac{1}{\sigma_i^2} {\brackets{\frac{1}{c}\abss{\x-\s_i} - t_i }} }}^2 \enspace. 
+\end{align}
+%
+% Variance Algorithm
+%
+Second, we can simply use a readily available, highly optimized, and fast sample variance computation function to compute the weighted variance of the vector 
+\begin{align}
+    \vec h(\x)-\t 
+    &= \begin{bmatrix}
+        \tfrac{1}{c} \abss{\x-\s_1} - t_1 \\
+        \tfrac{1}{c} \abss{\x-\s_2} - t_2 \\
+        \vdots  \\ 
+        \tfrac{1}{c} \abss{\x-\s_N} - t_N
+    \end{bmatrix}
+    \enspace. \label{eq:TOA:variance:alpha}
+\end{align}
+Say, $\op{SVar}(\vec y ;\; \w)$ computes the weighted sample variance of a vector of univariate samples $\vec y$, then our desired objective function can be written as
+\begin{align}
+    \theta(\x) &= \op{SVar}(\vec h(\x)-\t ;\; \w) \enspace, 
+\end{align}
+%
+% Interpretation
+%
+Consequently, we can interpret the nonlinear least squares solution 
+\begin{align}
+    \hat \x &= \argmin_\x \theta(\x) \label{eq:toa:sol}
+\end{align}
+as the $\x$ that minimizes the sample variance of $\paren{\vec h(\x)-\t}$. 
+
+%
+% ===
+%
+\paragraph*{Gradient}
+The gradient of the objective function is 
+\begin{align}
+    \frac{\partial \theta(\x)}{\partial \x\T} =& \frac{2}{\vec 1\T \w} \cdot \w\T \diag(\vec h(\x)-\t) \;  \mat J_{\vec h}(\x)
+    \text{\raisebox{-.7\baselineskip}[0pt][0pt]{\rotatebox[origin=c]{180}{$\Rsh$}}}  \\
+    & \; - \frac{2}{{\paren{1\T \w}}^2} \cdot \paren{\w\T \paren{\vec h(\x)-\t}} \cdot \paren{\w\T  \mat J_{\vec h}(\x) } \enspace. 
+\end{align}
+This can be seen as twice the weighted sample covariance between $(\vec h(\x)-\t)$ and $\mat J_{\vec h}$. But computation with available covariance computation functions would have to be done separately for the three columns of $\mat J_{\vec h}$ such that both samples have the same dimension, one. Either way, with this we can now also solve the three-dimensional \ac{TOA} multilateration problem with, e.g., a Quasi-Newton algorithm. 
+%  TODO Hessian
+
+
+%
+% =========
+%
+\section{Evaluation} 
+%
+% ======
+%
+\subsection{Setup} 
+\label{sec:eval:setup}
+For evaluation, we place $N=100$ sensors $\s_i$ randomly in $[0,10]^3$, define a ground truth, $t_0=0.2$ and $\x=[3,1,5]\T$, assume $c=1$, compute the noise-free measurements and add standard normal noise $(\sigma=1)$. We define the initial guess $\x_0=[9,8,2]\T$ and optimize in Julia using LeastSquaresOptim.jl, with standard settings $(\text{x\_tol}=\text{f\_tol}=\text{g\_tol}=10^{-8})$, using in-place syntax for the objective function and automatic differentiation via ForwardDiff.jl 
+\cite{Revels2016_ForwardModeAutomaticDifferentiationInJulia} for the Jacobian. 
+%
+% ======
+%
+\subsection{Timing} 
+Computation times are shown in \cref{table:times}. Thus, with the proposed \ac{TOA} we have a computational load comparable than than unweighted \ac{TDOA} -- or even somewhat lower. 
+
+%
+% ======
+%
+\subsection{Accuracy} 
+\label{sec:eval:rmse}
+Now we randomly vary the sensor locations, repeating the experiment 100,000 times. The \ac{RMSE} values are listed in \cref{table:RMSE}. See \cref{fig:eval} for a visualization of the distribution of the errors. All \ac{TDOA} methods with the correct weighting matrix as well as the \ac{TOA} method produce identical results. 
+
+%
+% ======
+%
+\subsection{Interpretation}
+The proposed \ac{TOA} method has a runtime comparable than the unweighted \ac{TDOA} methods -- while producing the same result as the correctly weighted \ac{TDOA}. 
+
+%
+% =========
+%
+\section{Conclusion} 
+We proposed a novel combination of unweighted least-squares objective function and Levenberg-Marquardt solver for the exact maximum likelihood problem in multilateration which is very fast. 
+%
+% vs TDOA state-of-art
+%
+State-of-the-art methods use differences of pairs of \acp{TOA}, called \ac{TDOA}, but then the least squares problem turns into a weighted one -- with non-diagonal covariance matrix, which is easily forgotten in design, error-prone in implementation, and slow in runtime. Our method is purely \ac{TOA}-based, preserves the diagonal weighting matrix, is faster to compute. 
+%
+% Concrete Functions
+%
+In particular, we derive a vector-valued objective function that is very simple to implement in-place and is suitable for the Levenberg-Marquardt algorithm \cref{eq:TOA-LM:sol}, as well as a scalar-valued one that can be computed via a a sample variance routine and can be optimized with a Quasi-Newton method \cref{eq:toa:sol}. 
+
+
+
+%
+% =========
+%
+%\newpage
+\printbibliography
+
+\end{document}

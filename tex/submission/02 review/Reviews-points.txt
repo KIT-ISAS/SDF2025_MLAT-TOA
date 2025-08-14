@@ -1,0 +1,26 @@
+
+- more thorough introduction/background on the applications that we may see TOA/TDOA used in
+
+- Harking on my application comment, an application specific numerical example would have been nice to see. The presented example seems too simple.  
+ 
+
+- To improve, the authors could analyze the relation of the proposed objective function (52-53) to the objective function (39) since they can be identical for a specific choice of the decomposition of the covariance matrix Cv.
+
+ 
+- The "TDOA Method" section is crammed compared to other sections, particularly the evaluation. I don't think its necesarry to review the topologies (especially the consecutive topology) in such detail. Or at least make the purpose of the detailed review clearer.
+
+
+
+
+DONE
+
+- In Section 1, the authors state: "Differentiation from prior art in these areas is...", do the authors mean to say, "state of the art"?
+
+- On page 2, column 1, around line 3, the authors write "Gau\beta-Newton". Do they mean "Gauss-Newton"?
+
+- The argument of f_v in (8) should have a negative sign. While this is not an issue for the Gaussian distribution of the noise, it matters for non-symmetric distributions.
+
+- Small issues:
+- Eq. (8) underbar missing under h?
+- Eq. (11) should make clearer what norm is used
+- Eq. (35) underbar missing under eta?

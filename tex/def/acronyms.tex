@@ -1,0 +1,109 @@
+
+% For details, see https://www.ctan.org/pkg/acro
+\RequirePackage{acro}
+
+%======== ENTER YOUR ABBREVIATIONS HERE ===============================
+
+% You can access the abbreviations in your code by the commands
+%  \ac for singluar
+%  \acp for plural
+%  \Ac for capitalized singular
+%  \acl for long form
+%  ... see acro package description for many more: https://www.ctan.org/pkg/acro
+
+% There is no need to sort your acronyms alphabetically, however it helps to have an overview.
+% You could assign classes for each acrynom, allowing to print only lists for eg. all channel types and a second list for all model types and so on.
+% This package acro is similar to the acronym package, but the latter does not provide capitalization
+
+\DeclareAcronym{TOA}		{short={TOA},		        long={time of arrival}, long-plural-form={times of arrival}}
+\DeclareAcronym{TDOA}		{short={TDOA},		      long={time difference of arrival}, long-plural-form={time differences of arrival}}
+\DeclareAcronym{DOTA}		{short={DOTA},		      long={difference of times of arrival}, long-plural-form={differences of times of arrival}, short-plural-form={DOTAs}}
+\DeclareAcronym{ROTA}		{short={ROTA},		      long={round trip time of arrival}, long-plural-form={round trip times of arrival}}
+\DeclareAcronym{LTDOA}	{short={L\hbox{-}TDOA},	long={local time difference of arrival}, long-plural-form={local time differences of arrival}}
+\DeclareAcronym{LDOTA}	{short={L\hbox{-}DOTA},	long={local differences of times of arrival}, long-plural-form={local differences of times of arrival}}
+\DeclareAcronym{DOTD}		{short={DOTD},		      long={difference of time differences}}
+\DeclareAcronym{TTT}		{short={TTT},		        long={target transmission time}}
+\DeclareAcronym{TDOT}		{short={TDOT},		      long={time difference of transmissions}, long-plural-form={time difference of transmissions}}
+\DeclareAcronym{SSR}		{short={SSR},	    	    long={secondary surveillance radar}}
+\DeclareAcronym{PSR}		{short={PSR},	    	    long={primary surveillance radar}}
+\DeclareAcronym{LORAN}	{short={LORAN},	    	  long={long range navigation system}}
+\DeclareAcronym{MLAT}		{short={MLAT},	    	  long={multilateration}}
+\DeclareAcronym{MLE}		{short={MLE},	    	    long={maximum likelihood estimator}}
+\DeclareAcronym{RSS}		{short={RSS},	    	    long={received signal strength}}
+\DeclareAcronym{AOA}		{short={AOA},	    	    long={angle of arrival}}
+\DeclareAcronym{ML}		  {short={ML},	    	    long={maximum likelihood}}
+\DeclareAcronym{MAP}	  {short={MAP},	    	    long={maximum a posteriori}}
+\DeclareAcronym{MMSE}		{short={MMSE},	    	  long={minimum mean square error}}
+\DeclareAcronym{MV}		{short={MV},	    	  long={minimum variance}}
+\DeclareAcronym{RMSE}		{short={RMSE},	    	  long={root mean square error}}
+\DeclareAcronym{LS}		  {short={LS},	    	    long={Least Squares}}
+\DeclareAcronym{NLS}		  {short={NLS},	    	    long={Nonlinear Least Squares}}
+\DeclareAcronym{LM}		  {short={LM},	    	    long={Levenberg-Marquardt}}
+\DeclareAcronym{GNSS}		{short={GNSS},	    	  long={global navigation satellite systems}}
+\DeclareAcronym{GPS}		{short={GPS},	    	    long={Global Positioning System}}
+\DeclareAcronym{ADSB}		{short={ADS-B},	    	  long={automatic dependent surveillance -- broadcast}}
+\DeclareAcronym{TOF}		{short={TOF},	    	    long={time of flight}}
+\DeclareAcronym{LORAWAN}{short={LoRaWAN},	  	  long={Long Range Wide Area Network}}
+\DeclareAcronym{3DUSCT}	{short={3D-USCT},	  	  long={3D-Ultrasound Computer Tomography}}
+\DeclareAcronym{EKF}		{short={EKF},	    	    long={Extended Kalman Filter}}
+\DeclareAcronym{GPF}		{short={GPF},	    	long={Gaussian Particle Filter}}
+\DeclareAcronym{GSPF}		{short={GSPF},	    	long={Gaussian Sum Particle Filter}}
+\DeclareAcronym{UKF}		{short={UKF},	    	    long={Unscented Kalman Filter}}
+\DeclareAcronym{CKF}		{short={CKF},	    	long={Cubature Kalman Filter}}
+\DeclareAcronym{SDR}		{short={SDR},	    	    long={software--defined radio}}
+\DeclareAcronym{CPU}		{short={CPU},	    	    long={central processing unit}}
+\DeclareAcronym{CRLB}		{short={CRLB},	    	  long={Cramér--Rao lower bound}}
+\DeclareAcronym{VR}		  {short={VR},	    	    long={virtual reality}}
+\DeclareAcronym{SME}		{short={SME},	    	    long={Symmetric Measurement Equation}}
+\DeclareAcronym{LCD}		{short={LCD},	    	    long={Localized Cumulative Distribution}}
+\DeclareAcronym{EM}	    {short={EM},	    	    long={expectation--maximization}}
+\DeclareAcronym{S2KF}	  {short={S$^2$KF},	      long={Smart Sampling Kalman Filter}}
+\DeclareAcronym{ODE}	  {short={ODE},	    	    long={ordinary differential equation}}
+\DeclareAcronym{GM}	    {short={GM},	    	    long={Gaussian mixture}}
+\DeclareAcronym{RM}	    {short={RM},	    	    long={root mixture}}
+\DeclareAcronym{GRM}	    {short={GRM},	    	    long={Gaussian root mixture}}
+\DeclareAcronym{DM}	    {short={DM},	    	    long={Dirac mixture}}
+\DeclareAcronym{LRKF}	  {short={LRKF},	    	  long={Linear Regression Kalman filter}}
+\DeclareAcronym{CoDiCo}	{short={CoDiCo},	      long={coupled discrete and continuous densities}} 
+\DeclareAcronym{vMF}		{short={vMF},	    	    long={von Mises--Fisher}}
+\DeclareAcronym{DMD}		{short={DMD},	    	    long={Dirac mixture density}}
+\DeclareAcronym{PDF}		{short={PDF},	    	    long={probability density function}}
+\DeclareAcronym{CDF}		{short={CDF},	    	    long={cumulative density function}}
+\DeclareAcronym{PCD}		{short={PCD},	    	    long={projected cumulative distribution}}
+\DeclareAcronym{QMC}		{short={QMC},	    	    long={quasi-Monte Carlo}}
+\DeclareAcronym{MC}		{short={MC},	    	    long={Monte Carlo}}
+\DeclareAcronym{RUKF}		{short={RUKF},	    	  long={Randomized Unscented Kalman Filter}}
+\DeclareAcronym{UWB}		{short={UWB},	    	    long={ultra-wideband}}
+\DeclareAcronym{FI}		   {short={FI},	    	       long={Fisher information}}
+\DeclareAcronym{FIM}		{short={FIM},	    	    long={Fisher information matrix}}
+\DeclareAcronym{FIF}		{short={FIF},	    	long={Fisher information field}}
+\DeclareAcronym{GDOP}		{short={GDOP},	    	long={geometric dilution of precision}}
+\DeclareAcronym{NLOS}		{short={NLOS},	    	long={non-line-of-sight}}
+\DeclareAcronym{LOS}		{short={LOS},	    	long={line-of-sight}}
+\DeclareAcronym{POD}		{short={POD},	    	long={probability of detection}}
+\DeclareAcronym{CLT}		{short={CLT},	    	long={Central Limit Theorem}}
+\DeclareAcronym{iid}		{short={iid},	    	long={independent identically distributed}}
+\DeclareAcronym{LDS}		{short={LDS},	    	long={low-discrepancy sequence}}
+\DeclareAcronym{PDGL}		{short={PDGL},	    	long={partial differential equation}}
+\DeclareAcronym{wce}		{short={wce},	    	long={worst-case error}}
+\DeclareAcronym{1D}		    {short={1D},	    	long={one-dimensional / univariate}}
+\DeclareAcronym{2D}		    {short={2D},	    	long={two-dimensional}}
+\DeclareAcronym{3D}		    {short={3D},	    	long={three-dimensional}}
+\DeclareAcronym{4D}		    {short={4D},	    	long={four-dimensional}}
+\DeclareAcronym{SND}		{short={SND},	    	long={standard normal density}}
+\DeclareAcronym{MCMC}		{short={MCMC},	    	long={Markov Chain Monte Carlo}}
+\DeclareAcronym{HMC}		{short={HMC},	    	long={Hamiltonian Monte Carlo}}
+\DeclareAcronym{PG}		    {short={PG},	    	long={Probability Gap}}
+\DeclareAcronym{RKHS}		{short={RKHS},	    	long={Reproducing Kernel Hilbert Space}}
+\DeclareAcronym{CPP}		{short={CPP},	    	long={Component Product Proposal}}
+\DeclareAcronym{POP}		{short={POP},	    	long={Polynomial Optimization Problem}}
+\DeclareAcronym{QCQP}		{short={QCQP},	    	long={Quadratically Constrained Quadratic Program}}
+\DeclareAcronym{SDP}		{short={SDP},	    	long={Semidefinite Programming}}
+\DeclareAcronym{MTT}		{short={MTT},	    	long={Multi Target Tracking}}
+\DeclareAcronym{LMI}		{short={LMI},	    	long={Linear Matrix Inequality}}
+\DeclareAcronym{SoS}		{short={SoS},	    	long={Sum of Squares}}
+\DeclareAcronym{GP}		    {short={GP},	    	long={Gaussian Process}}
+\DeclareAcronym{PSD}	    {short={PSD},	    	long={Positive Semi-Definite}}
+
+
+

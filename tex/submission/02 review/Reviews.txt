@@ -1,0 +1,39 @@
+Submission ID = 32
+Corresponding Author: Daniel Frisch
+Contact Information: daniel.frisch@kit.edu
+
+Reviewer #1: (Recommendation: Strong Accept)
+Hello, the authors present a pleasant-reading and well-structured paper that proposes a method to obtain target position estimates that are based solely on the time of arrival formulation and not the time difference of arrival. The authors claim that traditional methods of time difference of arrival unnecessarily complicate the covariance matrix by producing non-diagonal elements. This causes issues downstream when performing maximum likelihood estimation for the target position. Instead, the authors propose a method that sticks with the time of arrival formulation and eliminates the unknown target transmission time, which does not lead to a non-diagonal weighting matrix. They do this by making the least squares problem independent of the target transmission time and making it only a function of target position. Using their method, the authors show how to solve for the target position using a Levenberg-Marquard approach and a Quasi-Newton approach. In their presented numerical experiment, the authors show improved efficiency with the same accuracy as the traditional time difference of arrival weighted methods. I am honored to have reviewed this work and can confidently recommend this paper for the 2025 MFI conference.
+ 
+ 
+--- Minor Comments ---
+- I understand the limitations of writing a tight 6 page conference paper, however I feel the impact of this work could be greatly improved with a more thorough introduction/background on the applications that we may see TOA/TDOA used in.
+ 
+- Harking on my application comment, an application specific numerical example would have been nice to see. The presented example seems too simple.  
+ 
+ 
+--- Grammatical Errors ---
+- In Section 1, the authors state: "Differentiation from prior art in these areas is...", do the authors mean to say, "state of the art"?
+ 
+- On page 2, column 1, around line 3, the authors write "Gau\beta-Newton". Do they mean "Gauss-Newton"?
+
+
+Reviewer #2: (Recommendation: Strong Accept)
+This is a solid conference paper focusing on source localization from ToA measurements with unknown target transmission time.
+The novelty compared to state-of-the-art can be seen in having a diagonally weighted least squares problem, using the Levenberg-Marquardt method, and not requiring an initial guess for the target transmission time.
+To improve, the authors could analyze the relation of the proposed objective function (52-53) to the objective function (39) since they can be identical for a specific choice of the decomposition of the covariance matrix Cv.
+The argument of f_v in (8) should have a negative sign. While this is not an issue for the Gaussian distribution of the noise, it matters for non-symmetric distributions.
+
+Reviewer #3: (Recommendation: Strong Accept)
+The work proposes a localization approach based on TOA-measurements as an alternative to the classical TDOA method. In terms of information extracted from the measurements, the proposed method is equivalent to TDOA. However, the diagonal form of the measurement covariance matrix is preserved, leading to faster computation times in the authors tests.
+ 
+Some parts that typically would be included in the introduction (parts of the literature review) are found elsewhere in the paper.
+ 
+The "TDOA Method" section is crammed compared to other sections, particularly the evaluation. I don't think its necesarry to review the topologies (especially the consecutive topology) in such detail. Or at least make the purpose of the detailed review clearer.
+ 
+- Small issues:
+- Eq. (8) underbar missing under h?
+- Eq. (11) should make clearer what norm is used
+- Eq. (35) underbar missing under eta?
+
+
